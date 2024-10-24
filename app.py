@@ -32,15 +32,6 @@ def server(input, output, session):
     
     # Get and verify token
     token = os.environ.get('MD_TOKEN')
-    if not token:
-        raise ValueError("MD_TOKEN environment variable is not set")
-    
-    # Remove any whitespace that might be present
-    token = token.strip()
-    
-    # Verify token has the basic JWT structure (three sections separated by dots)
-    if len(token.split('.')) != 3:
-        raise ValueError("MD_TOKEN does not appear to be a valid JWT token")
     
     # Set the token and connect to MotherDuck
     con.execute(f"SET motherduck_token='{token}'")
