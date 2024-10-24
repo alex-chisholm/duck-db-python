@@ -13,7 +13,7 @@ app_ui = ui.page_sidebar(
         ui.p("Fill in your name and comment, then click Submit to add your message to the guestbook."),
     ),
     ui.card(
-        ui.h2("Guestbook Entries"),
+        ui.h2("Connect Cloud Guestbook"),
         ui.output_ui("entries"),
     ),
 )
@@ -67,7 +67,7 @@ def server(input, output, session):
     def get_entries():
         return con.execute("""
             SELECT name, comment, datetime 
-            FROM guestbook 
+            FROM my_db.guestbook 
             ORDER BY datetime DESC
         """).fetchall()
     
@@ -81,7 +81,7 @@ def server(input, output, session):
         if input.name().strip() and input.comment().strip():
             # Insert new entry into database
             con.execute("""
-                INSERT INTO guestbook (name, comment, datetime)
+                INSERT INTO my_db.guestbook (name, comment, datetime)
                 VALUES (?, ?, ?)
             """, [input.name(), input.comment(), datetime.now()])
             
