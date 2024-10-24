@@ -1,6 +1,7 @@
 from shiny import App, reactive, render, ui
 from datetime import datetime
 import duckdb
+import os
 
 app_ui = ui.page_sidebar(
     ui.sidebar(
@@ -19,23 +20,48 @@ app_ui = ui.page_sidebar(
 
 def server(input, output, session):
     # Initialize database connection
-    con = duckdb.connect(':memory:')
+    # con = duckdb.connect(':memory:')
+    # token = os.getenv('motherduck_token')
+    # con = duckdb.connect(f'md:my_db?motherduck_token={token}')
+
+    con = duckdb.connect(":memory:")
+    
+    # Install and load the MotherDuck extension
+    con.execute("INSTALL motherduck")
+    con.execute("LOAD motherduck")
+    
+    # Get and verify token
+    token = os.environ.get('MD_TOKEN')
+    if not token:
+        raise ValueError("MD_TOKEN environment variable is not set")
+    
+    # Remove any whitespace that might be present
+    token = token.strip()
+    
+    # Verify token has the basic JWT structure (three sections separated by dots)
+    if len(token.split('.')) != 3:
+        raise ValueError("MD_TOKEN does not appear to be a valid JWT token")
+    
+    # Set the token and connect to MotherDuck
+    con.execute(f"SET motherduck_token='{token}'")
+    con.execute("PRAGMA md_connect")
+    
     
     # Create the table if it doesn't exist
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS guestbook (
-            name VARCHAR,
-            comment VARCHAR,
-            datetime TIMESTAMP
-        )
-    """)
+    # con.execute("""
+    #     CREATE TABLE IF NOT EXISTS guestbook (
+    #         name VARCHAR,
+    #         comment VARCHAR,
+    #         datetime TIMESTAMP
+    #     )
+    # """)
     
     # Insert some initial sample data
-    con.execute("""
-        INSERT INTO guestbook VALUES 
-        ('Alice', 'First post!', '2024-01-01 10:00:00'),
-        ('Bob', 'Great guestbook app!', '2024-01-01 10:05:00')
-    """)
+    # con.execute("""
+    #     INSERT INTO guestbook VALUES 
+    #     ('Alice', 'First post!', '2024-01-01 10:00:00'),
+    #     ('Bob', 'Great guestbook app!', '2024-01-01 10:05:00')
+    # """)
     
     # Function to get all entries
     def get_entries():
