@@ -11,6 +11,11 @@ app_ui = ui.page_sidebar(
         ui.input_action_button("submit", "Submit", class_="btn-primary"),
         ui.hr(),
         ui.p("Fill in your name and comment, then click Submit to add your message to the guestbook."),
+        ui.hr(),
+        ui.input_action_button(
+            "delete_all", "Delete All Entries",
+            class_="btn-danger"
+        ),
     ),
     ui.card(
         ui.h2("Connect Cloud Guestbook"),
@@ -19,11 +24,6 @@ app_ui = ui.page_sidebar(
 )
 
 def server(input, output, session):
-    # Initialize database connection
-    # con = duckdb.connect(':memory:')
-    # token = os.getenv('motherduck_token')
-    # con = duckdb.connect(f'md:my_db?motherduck_token={token}')
-
     con = duckdb.connect(":memory:")
     
     # Install and load the MotherDuck extension
@@ -45,23 +45,6 @@ def server(input, output, session):
     # Set the token and connect to MotherDuck
     con.execute(f"SET motherduck_token='{token}'")
     con.execute("PRAGMA md_connect")
-    
-    
-    # Create the table if it doesn't exist
-    # con.execute("""
-    #     CREATE TABLE IF NOT EXISTS guestbook (
-    #         name VARCHAR,
-    #         comment VARCHAR,
-    #         datetime TIMESTAMP
-    #     )
-    # """)
-    
-    # Insert some initial sample data
-    # con.execute("""
-    #     INSERT INTO guestbook VALUES 
-    #     ('Alice', 'First post!', '2024-01-01 10:00:00'),
-    #     ('Bob', 'Great guestbook app!', '2024-01-01 10:05:00')
-    # """)
     
     # Function to get all entries
     def get_entries():
@@ -91,6 +74,38 @@ def server(input, output, session):
             # Clear the inputs
             ui.update_text("name", value="")
             ui.update_text("comment", value="")
+
+    @reactive.effect
+    @reactive.event(input.delete_all)
+    def delete_all():
+        # Show confirmation dialog
+        confirmed = ui.modal_show(
+            ui.modal(
+                "Are you sure you want to delete all entries?",
+                title="Confirm Deletion",
+                easy_close=True,
+                footer=ui.div(
+                    ui.input_action_button("confirm_delete", "Yes, Delete All", class_="btn-danger"),
+                    ui.input_action_button("cancel_delete", "Cancel"),
+                )
+            )
+        )
+
+    @reactive.effect
+    @reactive.event(input.confirm_delete)
+    def perform_delete():
+        # Delete all entries
+        con.execute("DELETE FROM my_db.guestbook")
+        # Update reactive value
+        entries_rv.set(get_entries())
+        # Close the modal
+        ui.modal_remove()
+
+    @reactive.effect
+    @reactive.event(input.cancel_delete)
+    def cancel_delete():
+        # Just close the modal
+        ui.modal_remove()
 
     @render.ui
     def entries():
