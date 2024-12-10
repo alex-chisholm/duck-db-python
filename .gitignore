@@ -2,3 +2,5 @@
 data/
 .env
 __pycache__
+example1.py
+motherduck.py
